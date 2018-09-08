@@ -360,7 +360,12 @@ int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 	old_cred = override_creds(override_cred);
 
 	err = -EIO;
+    #ifdef CONCURRENT_OPEN
+    struct mutex *m_rename = &(dentry->d_inode->i_sb->s_vfs_rename_mutex);
+    if (ovl_lock_rename(workdir, upperdir, m_rename) != NULL) {
+    #else
 	if (lock_rename(workdir, upperdir) != NULL) {
+    #endif
 		pr_err("overlayfs: failed to lock workdir+upperdir\n");
 		goto out_unlock;
 	}
@@ -378,8 +383,12 @@ int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 		ovl_set_timestamps(upperdir, &pstat);
 	}
 out_unlock:
-	unlock_rename(workdir, upperdir);
-	revert_creds(old_cred);
+    #ifdef CONCURRENT_OPEN
+    ovl_unlock_rename(workdir, upperdir, m_rename);
+    #else
+    unlock_rename(workdir, upperdir);
+    #endif
+    revert_creds(old_cred);
 	put_cred(override_cred);
 
 out_free_link:

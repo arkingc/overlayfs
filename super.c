@@ -1119,6 +1119,8 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_root = root_dentry;
 	sb->s_fs_info = ufs;
 
+    mutex_init(&(sb->s_vfs_rename_mutex));
+
 	return 0;
 
 out_free_oe:

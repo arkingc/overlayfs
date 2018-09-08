@@ -17,6 +17,8 @@ enum ovl_path_type {
 	__OVL_PATH_MERGE	= (1 << 2),
 };
 
+#define CONCURRENT_OPEN
+
 #define OVL_TYPE_UPPER(type)	((type) & __OVL_PATH_UPPER)
 #define OVL_TYPE_MERGE(type)	((type) & __OVL_PATH_MERGE)
 #define OVL_TYPE_PURE_UPPER(type) ((type) & __OVL_PATH_PURE)
@@ -199,3 +201,7 @@ int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 		    struct path *lowerpath, struct kstat *stat);
 int ovl_copy_xattr(struct dentry *old, struct dentry *new);
 int ovl_set_attr(struct dentry *upper, struct kstat *stat);
+
+/* rename.c */
+struct dentry* ovl_lock_rename(struct dentry *p1,struct dentry *p2,struct mutex *m);
+void ovl_unlock_rename(struct dentry *p1,struct dentry *p2,struct mutex *m);
