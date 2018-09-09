@@ -244,12 +244,15 @@ static struct dentry *ovl_clear_empty(struct dentry *dentry,
 	struct dentry *opaquedir;
 	struct kstat stat;
 	int err;
+    #ifdef CONCURRENT_OPEN
+    struct mutex *m_rename;
+    #endif
 
 	if (WARN_ON(!workdir))
 		return ERR_PTR(-EROFS);
 
     #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename = &(dentry->d_inode->i_sb->s_vfs_rename_mutex);
+    m_rename = get_mutex();
     err = ovl_lock_rename_workdir2(workdir, upperdir, m_rename);
     #else
 	err = ovl_lock_rename_workdir(workdir, upperdir);
@@ -356,12 +359,15 @@ static int ovl_create_over_whiteout(struct dentry *dentry, struct inode *inode,
 	struct dentry *upper;
 	struct dentry *newdentry;
 	int err;
+    #ifdef CONCURRENT_OPEN
+    struct mutex *m_rename;
+    #endif
 
 	if (WARN_ON(!workdir))
 		return -EROFS;
 
     #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename = &(inode->i_sb->s_vfs_rename_mutex);
+    m_rename = get_mutex();
     err = ovl_lock_rename_workdir2(workdir, upperdir, m_rename);
     #else
 	err = ovl_lock_rename_workdir(workdir, upperdir);
@@ -553,6 +559,9 @@ static int ovl_remove_and_whiteout(struct dentry *dentry, bool is_dir)
 	struct dentry *opaquedir = NULL;
 	int err;
 	int flags = 0;
+    #ifdef CONCURRENT_OPEN
+    struct mutex *m_rename;
+    #endif
 
 	if (WARN_ON(!workdir))
 		return -EROFS;
@@ -579,7 +588,7 @@ static int ovl_remove_and_whiteout(struct dentry *dentry, bool is_dir)
 	}
 
     #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename = &(dentry->d_inode->i_sb->s_vfs_rename_mutex);
+    m_rename = get_mutex();
     err = ovl_lock_rename_workdir2(workdir, upperdir, m_rename);
     #else
 	err = ovl_lock_rename_workdir(workdir, upperdir);
@@ -771,8 +780,11 @@ static int ovl_rename2(struct inode *olddir, struct dentry *old,
 	struct dentry *opaquedir = NULL;
 	const struct cred *old_cred = NULL;
 	struct cred *override_cred = NULL;
+    #ifdef CONCURRENT_OPEN
+    struct mutex *m_rename;
+    #endif
 
-	err = -EINVAL;
+    err = -EINVAL;
 	if (flags & ~(RENAME_EXCHANGE | RENAME_NOREPLACE))
 		goto out;
 
@@ -888,17 +900,11 @@ static int ovl_rename2(struct inode *olddir, struct dentry *old,
 	new_upperdir = ovl_dentry_upper(new->d_parent);
 
     #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename = &(old->d_inode->i_sb->s_vfs_rename_mutex);
+    m_rename = get_mutex();
     trap = ovl_lock_rename(new_upperdir,old_upperdir,m_rename);
-    //printk("%s \t %s\n",old->d_inode->i_sb->s_id,
-    //        old->d_inode->i_sb->s_type->name);
     #else
 	trap = lock_rename(new_upperdir, old_upperdir);
-    //printk("%s \t %s\n",new_upperdir->d_inode->i_sb->s_id,
-    //        new_upperdir->d_inode->i_sb->s_type->name);
     #endif
-
-    printk("after ovl_lock_rename\n");
 
 	olddentry = lookup_one_len(old->d_name.name, old_upperdir,
 				   old->d_name.len);

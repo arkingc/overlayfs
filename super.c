@@ -19,6 +19,7 @@
 #include <linux/sched.h>
 #include <linux/statfs.h>
 #include <linux/seq_file.h>
+#include <linux/fs_struct.h>
 #include "overlayfs.h"
 
 MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
@@ -42,6 +43,9 @@ struct ovl_fs {
 	long lower_namelen;
 	/* pathnames of lower and upper dirs, for show_options */
 	struct ovl_config config;
+    #ifdef CONCURRENT_OPEN
+    struct mutex rename_mutex;
+    #endif
 };
 
 struct ovl_dir_cache;
@@ -62,6 +66,15 @@ struct ovl_entry {
 };
 
 #define OVL_MAX_STACK 500
+
+#ifdef CONCURRENT_OPEN
+inline struct mutex* get_mutex(void)
+{
+    struct ovl_fs *ufs;
+    ufs = (struct ovl_fs*)(current->fs->root.dentry->d_inode->i_sb->s_fs_info);
+    return &ufs->rename_mutex;
+}
+#endif
 
 static struct dentry *__ovl_dentry_lower(struct ovl_entry *oe)
 {
@@ -956,6 +969,10 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	if (!ufs)
 		goto out;
 
+    #ifdef CONCURRENT_OPEN
+    mutex_init(&ufs->rename_mutex);
+    #endif
+
 	err = ovl_parse_opt((char *) data, &ufs->config);
 	if (err)
 		goto out_free_config;
@@ -1118,8 +1135,6 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_op = &ovl_super_operations;
 	sb->s_root = root_dentry;
 	sb->s_fs_info = ufs;
-
-    mutex_init(&(sb->s_vfs_rename_mutex));
 
 	return 0;
 

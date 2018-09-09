@@ -52,7 +52,6 @@ struct dentry *ovl_lock_rename(struct dentry *p1, struct dentry *p2, struct mute
         return NULL;
     }
 
-    printk("fuck you");
     mutex_lock(m);
     //mutex_lock(&p1->d_inode->i_sb->s_vfs_rename_mutex);
 
