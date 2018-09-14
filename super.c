@@ -74,6 +74,17 @@ inline struct mutex* get_mutex(void)
     ufs = (struct ovl_fs*)(current->fs->root.dentry->d_inode->i_sb->s_fs_info);
     return &ufs->rename_mutex;
 }
+
+inline struct mutex* get_mutex_dentry(struct dentry* d)
+{
+    struct ovl_fs *ufs;
+    struct super_block *sb;
+    
+    sb = d->d_inode->i_sb;
+    ufs = (struct ovl_fs*)(sb->s_fs_info);
+
+    return &ufs->rename_mutex;
+}
 #endif
 
 static struct dentry *__ovl_dentry_lower(struct ovl_entry *oe)

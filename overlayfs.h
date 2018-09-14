@@ -205,6 +205,7 @@ int ovl_set_attr(struct dentry *upper, struct kstat *stat);
 #ifdef CONCURRENT_OPEN
 /* super.c */
 inline struct mutex* get_mutex(void);
+inline struct mutex* get_mutex_dentry(struct dentry* d);
 #endif
 
 /* rename.c */
