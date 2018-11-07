@@ -210,4 +210,7 @@ inline struct mutex* get_mutex_dentry(struct dentry* d);
 
 /* rename.c */
 struct dentry* ovl_lock_rename(struct dentry *p1,struct dentry *p2,struct mutex *m);
+struct dentry* ovl_lockfree_rename(struct dentry *p1,struct dentry *p2);
 void ovl_unlock_rename(struct dentry *p1,struct dentry *p2,struct mutex *m);
+void ovl_unlock2_rename(struct dentry *p1,struct dentry *p2);
+

@@ -781,7 +781,7 @@ static int ovl_rename2(struct inode *olddir, struct dentry *old,
 	const struct cred *old_cred = NULL;
 	struct cred *override_cred = NULL;
     #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename;
+    //struct mutex *m_rename;
     #endif
 
     err = -EINVAL;
@@ -900,8 +900,8 @@ static int ovl_rename2(struct inode *olddir, struct dentry *old,
 	new_upperdir = ovl_dentry_upper(new->d_parent);
 
     #ifdef CONCURRENT_OPEN
-    m_rename = get_mutex();
-    trap = ovl_lock_rename(new_upperdir,old_upperdir,m_rename);
+    //m_rename = get_mutex_dentry(old);
+    trap = ovl_lockfree_rename(new_upperdir,old_upperdir);
     #else
 	trap = lock_rename(new_upperdir, old_upperdir);
     #endif
@@ -1004,7 +1004,7 @@ out_dput_old:
 	dput(olddentry);
 out_unlock:
     #ifdef CONCURRENT_OPEN
-    ovl_unlock_rename(new_upperdir, old_upperdir, m_rename);
+    ovl_unlock2_rename(new_upperdir, old_upperdir);
     #else
 	unlock_rename(new_upperdir, old_upperdir);
     #endif

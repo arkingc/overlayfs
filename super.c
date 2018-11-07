@@ -80,7 +80,7 @@ inline struct mutex* get_mutex_dentry(struct dentry* d)
     struct ovl_fs *ufs;
     struct super_block *sb;
     
-    sb = d->d_inode->i_sb;
+    sb = d->d_sb;
     ufs = (struct ovl_fs*)(sb->s_fs_info);
 
     return &ufs->rename_mutex;

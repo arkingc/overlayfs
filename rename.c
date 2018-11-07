@@ -43,6 +43,37 @@ struct dentry *d_ancestor(struct dentry *p1, struct dentry *p2)
 /*
  *  p1 and p2 should be directories on the same fs.
  */
+struct dentry *ovl_lockfree_rename(struct dentry *p1, struct dentry *p2)
+{
+    struct dentry *p;
+
+    if (p1 == p2) {
+        mutex_lock_nested(&p1->d_inode->i_mutex, I_MUTEX_PARENT);
+        return NULL;
+    }
+
+    p = d_ancestor(p2, p1);
+    if (p) {
+        mutex_lock_nested(&p2->d_inode->i_mutex, I_MUTEX_PARENT);
+        mutex_lock_nested(&p1->d_inode->i_mutex, I_MUTEX_CHILD);
+        return p;
+    }
+
+    p = d_ancestor(p1, p2);
+    if (p) {
+        mutex_lock_nested(&p1->d_inode->i_mutex, I_MUTEX_PARENT);
+        mutex_lock_nested(&p2->d_inode->i_mutex, I_MUTEX_CHILD);
+        return p;
+    }
+
+    mutex_lock_nested(&p1->d_inode->i_mutex, I_MUTEX_PARENT);
+    mutex_lock_nested(&p2->d_inode->i_mutex, I_MUTEX_PARENT2);
+    return NULL;
+}
+
+/*
+ *  p1 and p2 should be directories on the same fs.
+ */
 struct dentry *ovl_lock_rename(struct dentry *p1, struct dentry *p2, struct mutex *m)
 {
     struct dentry *p;
@@ -80,6 +111,15 @@ void ovl_unlock_rename(struct dentry *p1, struct dentry *p2, struct mutex *m)
     if (p1 != p2) {
         mutex_unlock(&p2->d_inode->i_mutex);
         mutex_unlock(m);
+        //mutex_unlock(&p1->d_inode->i_sb->s_vfs_rename_mutex);
+    }
+}
+
+void ovl_unlock2_rename(struct dentry *p1, struct dentry *p2)
+{
+    mutex_unlock(&p1->d_inode->i_mutex);
+    if (p1 != p2) {
+        mutex_unlock(&p2->d_inode->i_mutex);
         //mutex_unlock(&p1->d_inode->i_sb->s_vfs_rename_mutex);
     }
 }
