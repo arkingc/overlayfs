@@ -8,6 +8,7 @@
  */
 
 #include <linux/kernel.h>
+#include "util.h"
 
 struct ovl_entry;
 
@@ -18,6 +19,7 @@ enum ovl_path_type {
 };
 
 #define CONCURRENT_OPEN
+//#define RESOURCE_MANAGE_OPEN
 
 #define OVL_TYPE_UPPER(type)	((type) & __OVL_PATH_UPPER)
 #define OVL_TYPE_MERGE(type)	((type) & __OVL_PATH_MERGE)
@@ -202,10 +204,14 @@ int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 int ovl_copy_xattr(struct dentry *old, struct dentry *new);
 int ovl_set_attr(struct dentry *upper, struct kstat *stat);
 
-#ifdef CONCURRENT_OPEN
 /* super.c */
+#ifdef CONCURRENT_OPEN
 inline struct mutex* get_mutex(void);
 inline struct mutex* get_mutex_dentry(struct dentry* d);
+#endif
+#ifdef RESOURCE_MANAGE_OPEN
+struct resource_weight* get_rw(struct dentry* d);
+struct used_resource* get_ur(struct dentry* d);
 #endif
 
 /* rename.c */
@@ -214,3 +220,11 @@ struct dentry* ovl_lockfree_rename(struct dentry *p1,struct dentry *p2);
 void ovl_unlock_rename(struct dentry *p1,struct dentry *p2,struct mutex *m);
 void ovl_unlock2_rename(struct dentry *p1,struct dentry *p2);
 
+/* manager.c */
+void inc_used_inodes(struct used_resource *ur);
+void dec_used_inodes(struct used_resource *ur);
+int verify_create(struct super_block *sb, struct  resource_weight *rw,struct used_resource *ur);
+void set_weight(struct resource_weight *rw,int inode,int block);
+void add_total_weight(struct resource_weight * rw);
+void sub_total_weight(struct  resource_weight *rw);
+void printInfo(struct super_block *sb, struct  resource_weight *rw);

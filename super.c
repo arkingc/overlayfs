@@ -26,6 +26,11 @@ MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
 MODULE_DESCRIPTION("Overlay filesystem");
 MODULE_LICENSE("GPL");
 
+#ifdef  RESOURCE_MANAGE_OPEN
+static int weight_cases [] = {1,2,3};
+static int container_id = 0;
+#endif
+
 #define OVERLAYFS_SUPER_MAGIC 0x794c7630
 
 struct ovl_config {
@@ -45,6 +50,10 @@ struct ovl_fs {
 	struct ovl_config config;
     #ifdef CONCURRENT_OPEN
     struct mutex rename_mutex;
+    #endif
+    #ifdef RESOURCE_MANAGE_OPEN
+    struct  resource_weight rw;
+    struct  used_resource ur;
     #endif
 };
 
@@ -84,6 +93,20 @@ inline struct mutex* get_mutex_dentry(struct dentry* d)
     ufs = (struct ovl_fs*)(sb->s_fs_info);
 
     return &ufs->rename_mutex;
+}
+#endif
+
+#ifdef RESOURCE_MANAGE_OPEN
+struct resource_weight* get_rw(struct dentry* d)
+{
+	struct ovl_fs *ufs =  (struct ovl_fs*)(d->d_sb->s_fs_info);
+	return &(ufs->rw);
+}
+
+struct used_resource* get_ur(struct dentry* d)
+{
+	struct ovl_fs *ufs =  (struct ovl_fs*)(d->d_sb->s_fs_info);
+	return &(ufs->ur);
 }
 #endif
 
@@ -145,7 +168,7 @@ struct dentry *ovl_dentry_upper(struct dentry *dentry)
 {
 	struct ovl_entry *oe = dentry->d_fsdata;
 
-	return ovl_upperdentry_dereference(oe);
+ 	return ovl_upperdentry_dereference(oe);
 }
 
 struct dentry *ovl_dentry_lower(struct dentry *dentry)
@@ -1146,6 +1169,22 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_op = &ovl_super_operations;
 	sb->s_root = root_dentry;
 	sb->s_fs_info = ufs;
+
+	#ifdef  RESOURCE_MANAGE_OPEN
+	/***************************************************************************
+	 * read weight file from container's storage area
+	 *    1) if this container is a new created container, then we modified the Docker source code
+	 *         and read weight configure from docker cli and use storage driver to create a weight 
+	  *        file in the container's storage area;
+	  *   2) if this container is restarted, then the file is already created.
+	  *   so, no mather 1) or 2), here we must can read the weight file
+	 ***************************************************************************/ 
+	// following code just for test
+	set_weight(&(ufs->rw), weight_cases[container_id] * 10,weight_cases[container_id] * 10);
+	container_id++;
+	add_total_weight(&(ufs->rw));
+	printInfo(NULL,&(ufs->rw));
+	#endif
 
 	return 0;
 

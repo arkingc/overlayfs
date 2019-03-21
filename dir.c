@@ -501,6 +501,19 @@ static int ovl_create_object(struct dentry *dentry, int mode, dev_t rdev,
 static int ovl_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 		      bool excl)
 {
+	/*
+	struct dentry *upperdir = ovl_dentry_upper(dentry->d_parent);
+	struct super_block *sb = upperdir->d_sb;
+	struct resource_weight *rw = get_rw(dentry);
+	struct used_resource *ur = get_ur(dentry);
+
+	if(verify_create(sb, rw,ur) <= 0){
+		return  -ENOSPC;
+	} else {
+		inc_used_inodes(ur);
+		return ovl_create_object(dentry, (mode & 07777) | S_IFREG, 0, NULL);
+	}
+	*/
 	return ovl_create_object(dentry, (mode & 07777) | S_IFREG, 0, NULL);
 }
 
