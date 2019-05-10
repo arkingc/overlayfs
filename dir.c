@@ -226,7 +226,7 @@ static int ovl_lock_rename_workdir2(struct dentry *workdir,
 	return 0;
 
 err_unlock:
-    ovl_unlock_rename(workdir, upperdir, m);
+    ovl_unlock_rename(workdir, upperdir);
 err:
 	pr_err("overlayfs: failed to lock workdir+upperdir\n");
 	return -EIO;

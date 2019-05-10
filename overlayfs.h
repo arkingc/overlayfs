@@ -211,10 +211,8 @@ struct used_resource* get_ur(struct dentry* d);
 #endif
 
 /* rename.c */
-struct dentry* ovl_lock_rename(struct dentry *p1,struct dentry *p2,struct mutex *m);
-struct dentry* ovl_lockfree_rename(struct dentry *p1,struct dentry *p2);
-void ovl_unlock_rename(struct dentry *p1,struct dentry *p2,struct mutex *m);
-void ovl_unlock2_rename(struct dentry *p1,struct dentry *p2);
+struct dentry* ovl_lock_rename(struct dentry *p1,struct dentry *p2);
+void ovl_unlock_rename(struct dentry *p1,struct dentry *p2);
 
 /* manager.c */
 void inc_used_inodes(struct used_resource *ur);
