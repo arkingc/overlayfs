@@ -297,7 +297,11 @@ static struct dentry *ovl_clear_empty(struct dentry *dentry,
 
 	ovl_cleanup_whiteouts(upper, list);
 	ovl_cleanup(wdir, upper);
+	#ifdef CONCURRENT_OPEN
+    ovl_unlock_rename(workdir, upperdir);
+    #else
 	unlock_rename(workdir, upperdir);
+    #endif
 
 	/* dentry's upper doesn't match now, get rid of it */
 	d_drop(dentry);
