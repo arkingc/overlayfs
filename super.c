@@ -48,9 +48,6 @@ struct ovl_fs {
 	long lower_namelen;
 	/* pathnames of lower and upper dirs, for show_options */
 	struct ovl_config config;
-    #ifdef CONCURRENT_OPEN
-    struct mutex rename_mutex;
-    #endif
     #ifdef RESOURCE_MANAGE_OPEN
     struct  resource_weight rw;
     struct  used_resource ur;
@@ -75,26 +72,6 @@ struct ovl_entry {
 };
 
 #define OVL_MAX_STACK 500
-
-#ifdef CONCURRENT_OPEN
-inline struct mutex* get_mutex(void)
-{
-    struct ovl_fs *ufs;
-    ufs = (struct ovl_fs*)(current->fs->root.dentry->d_inode->i_sb->s_fs_info);
-    return &ufs->rename_mutex;
-}
-
-inline struct mutex* get_mutex_dentry(struct dentry* d)
-{
-    struct ovl_fs *ufs;
-    struct super_block *sb;
-    
-    sb = d->d_sb;
-    ufs = (struct ovl_fs*)(sb->s_fs_info);
-
-    return &ufs->rename_mutex;
-}
-#endif
 
 #ifdef RESOURCE_MANAGE_OPEN
 struct resource_weight* get_rw(struct dentry* d)
@@ -1002,10 +979,6 @@ static int ovl_fill_super(struct super_block *sb, void *data, int silent)
 	ufs = kzalloc(sizeof(struct ovl_fs), GFP_KERNEL);
 	if (!ufs)
 		goto out;
-
-    #ifdef CONCURRENT_OPEN
-    mutex_init(&ufs->rename_mutex);
-    #endif
 
 	err = ovl_parse_opt((char *) data, &ufs->config);
 	if (err)

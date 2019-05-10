@@ -205,10 +205,6 @@ int ovl_copy_xattr(struct dentry *old, struct dentry *new);
 int ovl_set_attr(struct dentry *upper, struct kstat *stat);
 
 /* super.c */
-#ifdef CONCURRENT_OPEN
-inline struct mutex* get_mutex(void);
-inline struct mutex* get_mutex_dentry(struct dentry* d);
-#endif
 #ifdef RESOURCE_MANAGE_OPEN
 struct resource_weight* get_rw(struct dentry* d);
 struct used_resource* get_ur(struct dentry* d);

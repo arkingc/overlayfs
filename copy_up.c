@@ -319,9 +319,6 @@ int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 	const struct cred *old_cred;
 	struct cred *override_cred;
 	char *link = NULL;
-    #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename;
-    #endif
 
 	if (WARN_ON(!workdir))
 		return -EROFS;
@@ -364,8 +361,7 @@ int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 
 	err = -EIO;
     #ifdef CONCURRENT_OPEN
-    m_rename = get_mutex();
-    if (ovl_lock_rename(workdir, upperdir, m_rename) != NULL) {
+    if (ovl_lock_rename(workdir, upperdir) != NULL) {
     #else
 	if (lock_rename(workdir, upperdir) != NULL) {
     #endif
@@ -387,7 +383,7 @@ int ovl_copy_up_one(struct dentry *parent, struct dentry *dentry,
 	}
 out_unlock:
     #ifdef CONCURRENT_OPEN
-    ovl_unlock_rename(workdir, upperdir, m_rename);
+    ovl_unlock_rename(workdir, upperdir);
     #else
     unlock_rename(workdir, upperdir);
     #endif

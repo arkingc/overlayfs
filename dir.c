@@ -213,14 +213,14 @@ err:
 }
 
 static int ovl_lock_rename_workdir2(struct dentry *workdir,
-				   struct dentry *upperdir, struct mutex *m)
+				   struct dentry *upperdir)
 {
 	/* Workdir should not be the same as upperdir */
 	if (workdir == upperdir)
 		goto err;
 
 	/* Workdir should not be subdir of upperdir and vice versa */
-    if (ovl_lock_rename(workdir, upperdir, m) != NULL)
+    if (ovl_lock_rename(workdir, upperdir) != NULL)
 		goto err_unlock;
 
 	return 0;
@@ -244,16 +244,12 @@ static struct dentry *ovl_clear_empty(struct dentry *dentry,
 	struct dentry *opaquedir;
 	struct kstat stat;
 	int err;
-    #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename;
-    #endif
 
 	if (WARN_ON(!workdir))
 		return ERR_PTR(-EROFS);
 
     #ifdef CONCURRENT_OPEN
-    m_rename = get_mutex();
-    err = ovl_lock_rename_workdir2(workdir, upperdir, m_rename);
+    err = ovl_lock_rename_workdir2(workdir, upperdir);
     #else
 	err = ovl_lock_rename_workdir(workdir, upperdir);
     #endif
@@ -314,7 +310,7 @@ out_dput:
 	dput(opaquedir);
 out_unlock:
     #ifdef CONCURRENT_OPEN
-    ovl_unlock_rename(workdir, upperdir, m_rename);
+    ovl_unlock_rename(workdir, upperdir);
     #else
 	unlock_rename(workdir, upperdir);
     #endif
@@ -359,16 +355,12 @@ static int ovl_create_over_whiteout(struct dentry *dentry, struct inode *inode,
 	struct dentry *upper;
 	struct dentry *newdentry;
 	int err;
-    #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename;
-    #endif
 
 	if (WARN_ON(!workdir))
 		return -EROFS;
 
     #ifdef CONCURRENT_OPEN
-    m_rename = get_mutex();
-    err = ovl_lock_rename_workdir2(workdir, upperdir, m_rename);
+    err = ovl_lock_rename_workdir2(workdir, upperdir);
     #else
 	err = ovl_lock_rename_workdir(workdir, upperdir);
     #endif
@@ -417,7 +409,7 @@ out_dput:
 	dput(newdentry);
 out_unlock:
     #ifdef CONCURRENT_OPEN
-    ovl_unlock_rename(workdir, upperdir, m_rename);
+    ovl_unlock_rename(workdir, upperdir);
     #else
 	unlock_rename(workdir, upperdir);
     #endif
@@ -572,9 +564,6 @@ static int ovl_remove_and_whiteout(struct dentry *dentry, bool is_dir)
 	struct dentry *opaquedir = NULL;
 	int err;
 	int flags = 0;
-    #ifdef CONCURRENT_OPEN
-    struct mutex *m_rename;
-    #endif
 
 	if (WARN_ON(!workdir))
 		return -EROFS;
@@ -601,8 +590,7 @@ static int ovl_remove_and_whiteout(struct dentry *dentry, bool is_dir)
 	}
 
     #ifdef CONCURRENT_OPEN
-    m_rename = get_mutex();
-    err = ovl_lock_rename_workdir2(workdir, upperdir, m_rename);
+    err = ovl_lock_rename_workdir2(workdir, upperdir);
     #else
 	err = ovl_lock_rename_workdir(workdir, upperdir);
     #endif
@@ -644,7 +632,7 @@ out_dput_upper:
 	dput(upper);
 out_unlock:
     #ifdef CONCURRENT_OPEN
-    ovl_unlock_rename(workdir, upperdir, m_rename);
+    ovl_unlock_rename(workdir, upperdir);
     #else
 	unlock_rename(workdir, upperdir);
     #endif
@@ -793,9 +781,6 @@ static int ovl_rename2(struct inode *olddir, struct dentry *old,
 	struct dentry *opaquedir = NULL;
 	const struct cred *old_cred = NULL;
 	struct cred *override_cred = NULL;
-    #ifdef CONCURRENT_OPEN
-    //struct mutex *m_rename;
-    #endif
 
     err = -EINVAL;
 	if (flags & ~(RENAME_EXCHANGE | RENAME_NOREPLACE))
@@ -913,8 +898,7 @@ static int ovl_rename2(struct inode *olddir, struct dentry *old,
 	new_upperdir = ovl_dentry_upper(new->d_parent);
 
     #ifdef CONCURRENT_OPEN
-    //m_rename = get_mutex_dentry(old);
-    trap = ovl_lockfree_rename(new_upperdir,old_upperdir);
+    trap = ovl_lock_rename(new_upperdir, old_upperdir);
     #else
 	trap = lock_rename(new_upperdir, old_upperdir);
     #endif
