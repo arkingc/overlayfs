@@ -1001,7 +1001,7 @@ out_dput_old:
 	dput(olddentry);
 out_unlock:
     #ifdef CONCURRENT_OPEN
-    ovl_unlock2_rename(new_upperdir, old_upperdir);
+    ovl_unlock_rename(new_upperdir, old_upperdir);
     #else
 	unlock_rename(new_upperdir, old_upperdir);
     #endif
